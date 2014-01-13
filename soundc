@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# soundc - an utility to echo the download URL of a song on Soundcloud
+# Author: Juho Rinta-Paavola, based on soundcloud-dl by Luka Pusic
+# This file is GPLv2
+
+test -z "$1" && exit 1
+
+curl_installed=$(command -V curl &>/dev/null)
+wget_installed=$(command -V wget &>/dev/null)
+
+if $curl_installed; then
+    pages=$(curl -L -s --user-agent 'Mozilla/5.0' "$1" | tr '"' "\n" | grep "tracks?" | grep "page=" | awk -F= '{print $NF}' | sort -nu | tail -n 1)
+elif $wget_installed; then
+    pages=$(wget --max-redirect=1000 --trust-server-names -q -O- -U 'Mozilla/5.0' "$1" | tr '"' "\n" | grep "tracks?" | grep "page=" | awk -F= '{print $NF}' | sort -nu | tail -n 1)
+else
+    exit 3
+fi
+
+test -z "$pages" && pages=1
+
+for (( page=1; page <= $pages; page++ ))
+do
+if [ "$pages" = "1" ]; then
+if $curlinstalled; then
+this=$(curl -L -s --user-agent 'Mozilla/5.0' $1);
+  else
+this=$(wget --max-redirect=1000 --trust-server-names -q -O- -U 'Mozilla/5.0' $1);
+  fi
+else
+if $curlinstalled; then
+this=$(curl -L -s --user-agent 'Mozilla/5.0' $1?page=$page);
+  else
+this=$(wget --max-redirect=1000 --trust-server-names -q -O- -U 'Mozilla/5.0' $1?page=$page);
+  fi
+fi
+
+songs=$(echo "$this" | grep 'streamUrl' | tr '"' "\n" | sed 's/\\u0026amp;/\&/' | grep 'http://media.soundcloud.com/stream/' | sed 's/\\\\//');
+test -z "$songs" && exit 2
+song_count=$(echo "$songs" | wc -l)
+
+for (( song_id=1; song_id <= $song_count; song_id++ )); do
+    echo "$songs" | sed -n "$songid"p
+done
+done
